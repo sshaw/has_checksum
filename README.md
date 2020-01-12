@@ -118,6 +118,10 @@ end
 If `:key` is a `Symbol` it will treated as a method name. If it's a `String` is will be used literally, as the key.
 It can also be a `Proc` that returns the key.
 
+## See Also
+
+[rspec-checksum-matchers](https://gist.github.com/sshaw/df14f6f89860b2dbcfd2)
+
 ## Author
 
 Skye Shaw (skye.shaw -AT- gmail)
