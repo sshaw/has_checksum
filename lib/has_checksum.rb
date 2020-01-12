@@ -96,36 +96,25 @@ module HasChecksum
 
       options[:algorithm] ||= "sha256"
 
-      if defined?(::ActiveRecord)
+      if self < ::ActiveRecord::Base
         extend ActiveRecord
       else
         extend PORO
       end
 
-      sources = Array(config)
-      sources.each do |name|
-        raise ArgumentError, "cannot calculate using unknown method/attribute '#{name}'" unless method_exists?(name)
-      end
-
-      [ sources, options ]
+      [ Array(config), options ]
     end
   end
 
   module PORO
     private
 
-    def method_exists?(name)
-      respond_to?(name) || instance_methods.include?(name.to_sym)
-    end
-
     def define_methods(calculator, source, options)
       klass = options[:algorithm]
-      if !method_exists?(options[:method])
-        if klass.respond_to?(:call)
-          define_method(options[:method]) { klass[digest_string(source)] }
-        else
-          define_method(options[:method]) { send(calculator, klass, digest_string(source), options) }
-        end
+      if klass.respond_to?(:call)
+        define_method(options[:method]) { klass[digest_string(source)] }
+      else
+        define_method(options[:method]) { send(calculator, klass, digest_string(source), options) }
       end
     end
   end
@@ -133,30 +122,37 @@ module HasChecksum
   module ActiveRecord
     private
 
-    def method_exists?(name)
-      columns_hash.include?(name.to_s) || respond_to?(name)
-    end
-
     def define_methods(calculator, source, options)
       klass = options[:algorithm]
-      if !method_exists?(options[:method])
-        if klass.respond_to?(:call)
-          define_method(options[:method]) { klass[digest_string(source)] }
-        else
-          define_method(options[:method]) { send(calculator, klass, digest_string(source), options) }
-        end
-
-        return
+      if klass.respond_to?(:call)
+        define_method(options[:method]) { klass[digest_string(source)] }
+      else
+        define_method(options[:method]) { send(calculator, klass, digest_string(source), options) }
       end
 
-      setter = "#{options[:method]}="
-      raise "#{setter} does not exist" unless respond_to?(setter) || method_exists?(options[:method])
+      # Check if we a column to write to or if we only recalculate
+      return unless columns_hash.include?(options[:method].to_s)
+
+      watching = source.map(&:to_s)
+      if options[:key].is_a?(Symbol)
+        key = options[:key].to_s
+        # if the key is a column it could change too and we must recalculate, e.g., updated_at
+        watching += [key] if columns_hash.include?(key)
+      end
 
       if klass.respond_to?(:call)
-        before_save { klass[value] }
+        after_create { update_column(options[:method], klass[digest_string(source)]) }
+        around_update do |_, block|
+          changed = (watching & changed_attributes.keys).any?
+          block[]
+          update_column(options[:method], klass[digest_string(source)]) if changed
+        end
       else
-        before_save do
-          public_send(setter, send(calculator, klass, digest_string(source), options))
+        after_create { update_column(options[:method], public_send(options[:method])) }
+        around_update do |_, block|
+          changed = (watching & changed_attributes.keys).any?
+          block[]
+          update_column(options[:method], public_send(options[:method])) if changed
         end
       end
     end
