@@ -1,5 +1,7 @@
 # HasChecksum
 
+[![Build Status](https://travis-ci.org/sshaw/has_checksum.svg?branch=master)](https://travis-ci.org/sshaw/has_checksum)
+
 Automatically calculate checksums and signatures from the values of your class' attributes/methods
 
 Works with POROs and ActiveRecord.
@@ -102,6 +104,7 @@ end
 
 ### `has_signature`
 
+Calculates a hash-based message authentication code (HMAC).
 This (mostly) works the same as [`has_checksum`](#has_checksum) but requires a `:key` argument that will be used as the HMAC's key:
 
 ```rb
@@ -112,7 +115,8 @@ class User < ActiveRecord::Base
 end
 ```
 
-If `:key` is not a `Symbol` it will be used literally, as the key.
+If `:key` is a `Symbol` it will treated as a method name. If it's a `String` is will be used literally, as the key.
+It can also be a `Proc` that returns the key.
 
 ## Author
 

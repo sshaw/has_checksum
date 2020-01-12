@@ -17,11 +17,12 @@ module HasChecksum
       def calculate_signature(digest, value, options = {})
         key = case options[:key]
               when Symbol
+                raise "key option refers to an unknown method '#{options[:key]}'" unless respond_to?(options[:key])
                 send(options[:key])
               when Proc
                 options[:key][]
               else
-                key
+                options[:key]
               end
 
         hmac = OpenSSL::HMAC.new(key.to_s, digest)
@@ -54,15 +55,12 @@ module HasChecksum
     def has_signature(*config)
       source, options = has_checksum_configure(config)
       raise ArgumentError, "key option required to calculate a signature" unless options[:key]
-      if options[:key].is_a?(Symbol) && !method_exists?(options[:key])
-        raise "key option refers to an unknown method '#{options[:key]}'"
-      end
 
       if !options[:algorithm].respond_to?(:call)
         begin
           options[:algorithm] = OpenSSL::Digest.new(options[:algorithm])
         rescue RuntimeError
-          raise ArgumentError, "unknown algorithm #{options[:algorithm]}"
+          raise ArgumentError, "unknown algorithm '#{options[:algorithm]}'"
         end
       end
 
@@ -79,7 +77,7 @@ module HasChecksum
           options[:algorithm] = Digest.const_get(options[:algorithm].upcase)
         # Digest seems to only raise LoadError here but we add NameError for good measure
         rescue LoadError, NameError
-          raise ArgumentError, "unknown algorithm #{options[:algorithm]}"
+          raise ArgumentError, "unknown algorithm '#{options[:algorithm]}'"
         end
       end
 
@@ -106,7 +104,7 @@ module HasChecksum
 
       sources = Array(config)
       sources.each do |name|
-        raise "cannot calculate using unknown method/attribute '#{name}'" unless method_exists?(name)
+        raise ArgumentError, "cannot calculate using unknown method/attribute '#{name}'" unless method_exists?(name)
       end
 
       [ sources, options ]
