@@ -24,7 +24,7 @@ Or install it yourself as:
 
 ## Usage
 
-Use the [`has_checksum`](#has_checksum) or [`has_signature`](#has_signature) class methods to calculate checksums or signatures of your class' columns and/or methods return values.
+Use the [`has_checksum`](#has_checksum) and/or [`has_signature`](#has_signature) class methods to calculate checksums or signatures of your class' columns and/or methods return values.
 
 ### `has_checksum`
 
