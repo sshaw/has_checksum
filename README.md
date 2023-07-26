@@ -1,6 +1,6 @@
 # HasChecksum
 
-[![Build Status](https://travis-ci.org/sshaw/has_checksum.svg?branch=master)](https://travis-ci.org/sshaw/has_checksum)
+[![CI](https://github.com/sshaw/has_checksum/actions/workflows/ci.yml/badge.svg)](https://github.com/sshaw/has_checksum/actions/workflows/ci.yml)
 
 Automatically calculate checksums and signatures from the values of your class' attributes/methods
 
